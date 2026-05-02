@@ -1,0 +1,1888 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>TSP Decision — NP-Completeness Explorer</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;600;700&family=Syne:wght@400;600;700;800&display=swap');
+
+  :root {
+    --bg: #07090f;
+    --bg2: #0d1117;
+    --bg3: #131820;
+    --panel: #161d28;
+    --border: #1e2d3d;
+    --border2: #243040;
+    --accent: #00d4ff;
+    --accent2: #ff6b35;
+    --accent3: #7fff6e;
+    --accent4: #c084fc;
+    --text: #e2eaf5;
+    --text2: #8faabb;
+    --text3: #4a6070;
+    --red: #ff4455;
+    --yellow: #ffd166;
+    --mono: 'JetBrains Mono', monospace;
+    --sans: 'Syne', sans-serif;
+    --glow: 0 0 20px rgba(0,212,255,0.15);
+    --glow2: 0 0 20px rgba(255,107,53,0.2);
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html { scroll-behavior: smooth; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: var(--mono);
+    font-size: 13px;
+    line-height: 1.6;
+    overflow-x: hidden;
+  }
+
+  /* ── HEADER ── */
+  header {
+    background: linear-gradient(135deg, #07090f 0%, #0d1820 100%);
+    border-bottom: 1px solid var(--border);
+    padding: 18px 28px;
+    display: flex; align-items: center; gap: 16px;
+    position: sticky; top: 0; z-index: 100;
+  }
+  .logo-badge {
+    background: var(--accent);
+    color: #000;
+    font-family: var(--sans);
+    font-weight: 800;
+    font-size: 11px;
+    letter-spacing: 2px;
+    padding: 4px 10px;
+    border-radius: 3px;
+    text-transform: uppercase;
+  }
+  header h1 {
+    font-family: var(--sans);
+    font-size: 18px;
+    font-weight: 700;
+    color: var(--text);
+    flex: 1;
+  }
+  header h1 span { color: var(--accent); }
+  .clo-badges { display: flex; gap: 6px; }
+  .clo-badge {
+    font-size: 10px; font-weight: 600;
+    padding: 3px 8px; border-radius: 2px;
+    border: 1px solid;
+    font-family: var(--sans);
+    letter-spacing: 1px;
+  }
+  .clo3 { color: var(--accent3); border-color: var(--accent3); background: rgba(127,255,110,0.06); }
+  .clo4 { color: var(--accent); border-color: var(--accent); background: rgba(0,212,255,0.06); }
+  .clo5 { color: var(--accent4); border-color: var(--accent4); background: rgba(192,132,252,0.06); }
+
+  /* ── TABS ── */
+  .tab-bar {
+    background: var(--bg2);
+    border-bottom: 1px solid var(--border);
+    padding: 0 28px;
+    display: flex; gap: 0;
+  }
+  .tab {
+    padding: 12px 20px;
+    font-family: var(--sans);
+    font-size: 12px;
+    font-weight: 600;
+    letter-spacing: 1px;
+    cursor: pointer;
+    color: var(--text3);
+    border-bottom: 2px solid transparent;
+    transition: all 0.2s;
+    text-transform: uppercase;
+    user-select: none;
+  }
+  .tab:hover { color: var(--text2); }
+  .tab.active { color: var(--accent); border-bottom-color: var(--accent); }
+
+  /* ── PANELS ── */
+  .tab-panel { display: none; }
+  .tab-panel.active { display: block; }
+
+  /* ── TWO-COLUMN LAYOUT ── */
+  .two-col {
+    display: grid;
+    grid-template-columns: 420px 1fr;
+    height: calc(100vh - 107px);
+    overflow: hidden;
+  }
+  .left-col {
+  overflow-y: auto; /* Adds a scrollbar to the sidebar if content is too long */
+  padding: 20px;
+  border-right: 1px solid var(--border);
+  display: flex;
+  flex-direction: column;
+  gap: 15px; /* Adds consistent spacing between boxes */
+}
+  .right-col {
+    background: var(--bg);
+    overflow: hidden;
+    display: flex; flex-direction: column;
+    min-width: 0;
+  }
+
+  /* ── SECTION CARDS ── */
+  .card {
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  width: 100%; /* Ensures it fills the 420px width */
+  flex-shrink: 0; /* Prevents boxes from squishing */
+}
+  .card-header {
+    padding: 9px 14px;
+    background: var(--bg3);
+    border-bottom: 1px solid var(--border);
+    font-family: var(--sans);
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 1.5px;
+    text-transform: uppercase;
+    color: var(--text2);
+    display: flex; align-items: center; gap: 8px;
+  }
+  .card-header .dot {
+    width: 7px; height: 7px; border-radius: 50%;
+    background: var(--accent);
+  }
+  .card-body {
+  padding: 15px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+  /* ── INPUTS ── */
+  label { font-size: 11px; color: var(--text2); margin-bottom: 4px; display: block; }
+  input[type=range] {
+    width: 100%; accent-color: var(--accent); cursor: pointer;
+  }
+  input[type=number], select {
+    width: 100%;
+    background: var(--bg);
+    border: 1px solid var(--border2);
+    color: var(--text);
+    padding: 7px 10px;
+    border-radius: 4px;
+    font-family: var(--mono);
+    font-size: 12px;
+    outline: none;
+    transition: border-color 0.2s;
+  }
+  input[type=number]:focus, select:focus { border-color: var(--accent); }
+  select option { background: var(--bg2); }
+
+  .btn {
+    padding: 8px 14px;
+    border: 1px solid var(--border2);
+    background: var(--bg3);
+    color: var(--text2);
+    font-family: var(--mono);
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0.5px;
+    border-radius: 4px;
+    cursor: pointer;
+    transition: all 0.15s;
+    user-select: none;
+  }
+  .btn:hover { border-color: var(--accent); color: var(--accent); background: rgba(0,212,255,0.05); }
+  .btn:active { transform: scale(0.97); }
+  .btn.primary { border-color: var(--accent); color: var(--accent); background: rgba(0,212,255,0.08); }
+  .btn.danger { border-color: var(--red); color: var(--red); background: rgba(255,68,85,0.07); }
+  .btn.success { border-color: var(--accent3); color: var(--accent3); background: rgba(127,255,110,0.07); }
+  .btn.warn { border-color: var(--yellow); color: var(--yellow); background: rgba(255,209,102,0.07); }
+  .btn:disabled { opacity: 0.35; cursor: not-allowed; pointer-events: none; }
+
+  .btn-row { display: flex; gap: 6px; flex-wrap: wrap; }
+  .preset-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 5px; }
+
+  /* ── STATS BAR ── */
+  .stats-bar {
+    display: grid; grid-template-columns: repeat(4, 1fr);
+    gap: 1px; background: var(--border);
+    border-bottom: 1px solid var(--border);
+  }
+  .stat-cell {
+    background: var(--bg2);
+    padding: 8px 14px;
+  }
+  .stat-label { font-size: 10px; color: var(--text3); text-transform: uppercase; letter-spacing: 1px; }
+  .stat-value { font-size: 18px; font-weight: 700; color: var(--accent); font-family: var(--sans); margin-top: 1px; }
+  .stat-value.orange { color: var(--accent2); }
+  .stat-value.green { color: var(--accent3); }
+  .stat-value.purple { color: var(--accent4); }
+
+  /* ── CANVAS AREA ── */
+  .canvas-wrap {
+    flex: 1;
+    position: relative;
+    display: flex; align-items: center; justify-content: center;
+    padding: 20px;
+    min-height: 0;
+  }
+  #mainCanvas {
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    background: var(--bg2);
+    max-width: 100%; max-height: 100%;
+    cursor: crosshair;
+  }
+
+  /* ── STATUS BAR ── */
+  .status-bar {
+    padding: 8px 18px;
+    border-top: 1px solid var(--border);
+    background: var(--bg2);
+    display: flex; align-items: center; gap: 12px;
+    font-size: 11px;
+  }
+  .status-dot {
+    width: 8px; height: 8px; border-radius: 50%;
+    background: var(--text3);
+    transition: background 0.3s;
+    flex-shrink: 0;
+  }
+  .status-dot.running { background: var(--accent3); box-shadow: 0 0 8px var(--accent3); animation: pulse 1s infinite; }
+  .status-dot.done { background: var(--accent); }
+  .status-dot.error { background: var(--red); }
+  #statusText { color: var(--text2); flex: 1; }
+  #stepCounter { color: var(--text3); }
+
+  @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.4} }
+
+  /* ── PSEUDOCODE ── */
+  .pseudo {
+    font-family: var(--mono);
+    font-size: 11.5px;
+    line-height: 1.8;
+  }
+  .pseudo-line {
+    padding: 1px 8px;
+    border-radius: 2px;
+    border-left: 2px solid transparent;
+    transition: all 0.15s;
+    white-space: pre;
+  }
+  .pseudo-line.highlight {
+    background: rgba(0,212,255,0.1);
+    border-left-color: var(--accent);
+    color: var(--accent);
+  }
+  .pseudo-line .kw { color: var(--accent4); }
+  .pseudo-line .fn { color: var(--accent); }
+  .pseudo-line .cm { color: var(--text3); font-style: italic; }
+  .pseudo-line .num { color: var(--accent2); }
+
+  /* ── EXPLANATION BOX ── */
+  .explain-box {
+    background: rgba(0,212,255,0.04);
+    border: 1px solid rgba(0,212,255,0.15);
+    border-radius: 4px;
+    padding: 10px 12px;
+    font-size: 11.5px;
+    color: var(--text2);
+    min-height: 48px;
+    transition: all 0.2s;
+  }
+  .explain-box strong { color: var(--accent); }
+
+  /* ── LEGEND ── */
+  .legend { display: flex; flex-wrap: wrap; gap: 10px; }
+  .leg-item { display: flex; align-items: center; gap: 5px; font-size: 11px; color: var(--text2); }
+  .leg-dot { width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0; }
+  .leg-line { width: 20px; height: 2px; flex-shrink: 0; }
+
+  /* ── COLLAPSIBLE ── */
+  .collapsible-header {
+    cursor: pointer;
+    user-select: none;
+    display: flex; align-items: center; justify-content: space-between;
+  }
+  .collapsible-header:hover { opacity: 0.8; }
+  .collapse-icon { transition: transform 0.3s; font-size: 10px; color: var(--text3); }
+  .collapsible-body { overflow: hidden; transition: max-height 0.4s ease; }
+  .collapsible-body.collapsed { max-height: 0 !important; }
+
+  /* ── PROOF / EDUCATION PANELS ── */
+  .proof-section { padding: 24px 28px; max-width: 900px; margin: 0 auto; }
+  .proof-section h2 {
+    font-family: var(--sans); font-size: 22px; font-weight: 800;
+    color: var(--text); margin-bottom: 6px;
+  }
+  .proof-section h2 span { color: var(--accent4); }
+  .proof-section p { color: var(--text2); line-height: 1.7; margin-bottom: 12px; font-size: 12.5px; }
+  .proof-section h3 {
+    font-family: var(--sans); font-size: 14px; font-weight: 700;
+    color: var(--accent); margin: 18px 0 8px; text-transform: uppercase;
+    letter-spacing: 1px;
+  }
+  .proof-box {
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 16px 18px;
+    margin-bottom: 16px;
+  }
+  .proof-box .step-num {
+    font-family: var(--sans); font-size: 11px; font-weight: 700;
+    color: var(--accent4); letter-spacing: 2px; text-transform: uppercase;
+    margin-bottom: 8px;
+  }
+  .proof-box p { margin-bottom: 8px; }
+  .proof-box .math {
+    background: var(--bg);
+    border-left: 3px solid var(--accent4);
+    padding: 10px 14px;
+    margin: 8px 0;
+    font-size: 12px;
+    color: var(--text);
+    font-family: var(--mono);
+    border-radius: 0 4px 4px 0;
+  }
+  .highlight-box {
+    background: rgba(192,132,252,0.06);
+    border: 1px solid rgba(192,132,252,0.2);
+    border-radius: 4px;
+    padding: 12px 14px;
+    margin: 10px 0;
+    font-size: 12px;
+    color: var(--text2);
+  }
+  .highlight-box strong { color: var(--accent4); }
+
+  /* ── REDUCTION DIAGRAM ── */
+  #reductionCanvas {
+    background: var(--bg2);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    display: block;
+    width: 100%;
+  }
+
+  /* ── COMPARISON TAB ── */
+  .compare-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1px;
+    background: var(--border);
+    flex: 1;
+  }
+  .compare-pane {
+    background: var(--bg);
+    display: flex; flex-direction: column;
+  }
+  .compare-header {
+    padding: 10px 16px;
+    background: var(--bg2);
+    border-bottom: 1px solid var(--border);
+    display: flex; align-items: center; gap: 10px;
+  }
+  .compare-header h3 {
+    font-family: var(--sans); font-size: 13px; font-weight: 700;
+  }
+  .compare-canvas-wrap {
+    flex: 1; padding: 12px;
+    display: flex; align-items: center; justify-content: center;
+  }
+  .compare-canvas-wrap canvas {
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    background: var(--bg2);
+  }
+  .compare-stats {
+    padding: 8px 16px;
+    background: var(--bg2);
+    border-top: 1px solid var(--border);
+    display: flex; gap: 16px; font-size: 11px;
+  }
+  .compare-stat span:first-child { color: var(--text3); }
+  .compare-stat span:last-child { color: var(--accent); font-weight: 700; }
+
+  /* ── GROWTH CHART ── */
+  #growthCanvas {
+    background: var(--bg2);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    display: block;
+    width: 100%;
+  }
+
+  /* ── SCROLLBAR ── */
+  ::-webkit-scrollbar { width: 5px; height: 5px; }
+  ::-webkit-scrollbar-track { background: var(--bg); }
+  ::-webkit-scrollbar-thumb { background: var(--border2); border-radius: 3px; }
+
+  /* ── MISC ── */
+  .divider { height: 1px; background: var(--border); margin: 4px 0; }
+  .flex-gap { display: flex; gap: 6px; align-items: center; }
+  .tag {
+    font-size: 10px; padding: 2px 7px; border-radius: 2px;
+    font-weight: 600; letter-spacing: 0.5px;
+    font-family: var(--sans);
+  }
+  .tag-np { background: rgba(192,132,252,0.15); color: var(--accent4); border: 1px solid rgba(192,132,252,0.3); }
+  .tag-greedy { background: rgba(127,255,110,0.1); color: var(--accent3); border: 1px solid rgba(127,255,110,0.25); }
+  .tag-bf { background: rgba(255,107,53,0.1); color: var(--accent2); border: 1px solid rgba(255,107,53,0.25); }
+
+  .tour-result {
+    background: var(--bg3);
+    border: 1px solid var(--border2);
+    border-radius: 4px;
+    padding: 8px 10px;
+    font-size: 11px;
+    color: var(--text2);
+    word-break: break-all;
+  }
+  .city-counter {
+    background: var(--bg);
+    border: 1px solid var(--border2);
+    padding: 4px 10px;
+    border-radius: 4px;
+    font-size: 12px;
+    color: var(--text2);
+  }
+
+  input[type=checkbox] { accent-color: var(--accent); cursor: pointer; }
+
+  .mode-toggle {
+    display: flex; border: 1px solid var(--border2); border-radius: 4px; overflow: hidden;
+  }
+  .mode-btn {
+    flex: 1; padding: 6px 10px; text-align: center; cursor: pointer;
+    font-size: 11px; font-weight: 600; font-family: var(--sans);
+    color: var(--text3); background: var(--bg3);
+    transition: all 0.15s; user-select: none; letter-spacing: 0.5px;
+  }
+  .mode-btn.active { background: rgba(0,212,255,0.12); color: var(--accent); }
+  .mode-btn:hover:not(.active) { color: var(--text2); }
+
+  /* spinner */
+  .spinner {
+    display: inline-block; width: 12px; height: 12px;
+    border: 2px solid var(--border2);
+    border-top-color: var(--accent);
+    border-radius: 50%;
+    animation: spin 0.7s linear infinite;
+    vertical-align: middle; margin-left: 6px;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  .alert {
+    padding: 8px 12px; border-radius: 4px; font-size: 11.5px;
+    background: rgba(255,107,53,0.08); border: 1px solid rgba(255,107,53,0.25);
+    color: var(--accent2);
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="logo-badge">NP</div>
+  <h1>Traveling Salesman Problem — <span>Decision Version</span></h1>
+  <div class="clo-badges">
+    <span class="clo-badge clo5">CLO-5</span>
+    <span class="clo-badge clo4">CLO-4</span>
+    <span class="clo-badge clo3">CLO-3</span>
+  </div>
+</header>
+
+<div class="tab-bar">
+  <div class="tab active" onclick="switchTab('visualizer')">▶ Visualizer</div>
+  <div class="tab" onclick="switchTab('comparison')">⚖ Comparison</div>
+  <div class="tab" onclick="switchTab('proof')">∴ NP-Completeness Proof</div>
+  <div class="tab" onclick="switchTab('growth')">📈 Growth Analysis</div>
+  <div class="tab" onclick="switchTab('overview')">📖 Overview</div>
+</div>
+
+<!-- ═══════════════════════════════════════════════ VISUALIZER TAB -->
+<div id="tab-visualizer" class="tab-panel active">
+  <div class="two-col">
+    <div class="left-col">
+
+      <!-- ALGORITHM SELECT -->
+      <div class="card">
+        <div class="card-header"><span class="dot" style="background:var(--accent4)"></span>Algorithm Mode</div>
+        <div class="card-body">
+          <div class="mode-toggle" style="margin-bottom:8px;">
+            <div class="mode-btn active" id="modeBF" onclick="setMode('brute')">Brute Force</div>
+            <div class="mode-btn" id="modeNN" onclick="setMode('nn')">Nearest Neighbor</div>
+            <div class="mode-btn" id="mode2opt" onclick="setMode('2opt')">NN + 2-opt</div>
+          </div>
+          <div id="modeDesc" class="explain-box" style="font-size:11px;min-height:38px;"></div>
+        </div>
+      </div>
+
+      <!-- PRESETS -->
+      <div class="card">
+        <div class="card-header"><span class="dot" style="background:var(--accent2)"></span>City Input</div>
+        <div class="card-body" style="display:flex;flex-direction:column;gap:8px;">
+          <label>Preset Examples</label>
+          <div class="preset-grid">
+            <button class="btn" onclick="loadPreset('triangle')">△ Triangle (3)</button>
+            <button class="btn" onclick="loadPreset('square')">□ Square (4)</button>
+            <button class="btn" onclick="loadPreset('pentagon')">⬠ Pentagon (5)</button>
+            <button class="btn" onclick="loadPreset('badNN')">⚠ NN Bad Case (6)</button>
+            <button class="btn" onclick="loadPreset('random6')">🎲 Random (6)</button>
+            <button class="btn" onclick="loadPreset('random10')">🎲 Random (10)</button>
+          </div>
+          <div class="divider"></div>
+          <label>Random City Count</label>
+          <div style="display:flex;gap:6px;">
+            <input type="number" id="numCities" value="6" min="3" max="12" style="width:70px;">
+            <button class="btn primary" onclick="generateRandom()" style="flex:1;">Generate</button>
+            <button class="btn danger" onclick="clearCities()" title="Clear all cities">✕</button>
+          </div>
+          <div style="font-size:10px;color:var(--text3);">Or click canvas to place cities manually</div>
+          <label>Bound B (for decision version)</label>
+          <input type="number" id="boundB" value="0" step="10" oninput="onBoundChange()">
+          <div style="font-size:10px;color:var(--text3);">0 = auto (use optimal tour weight)</div>
+        </div>
+      </div>
+
+      <!-- CONTROLS -->
+      <div class="card">
+        <div class="card-header"><span class="dot" style="background:var(--accent3)"></span>Playback Controls</div>
+        <div class="card-body" style="display:flex;flex-direction:column;gap:8px;">
+          <label>Speed: <span id="speedVal">Medium</span></label>
+          <input type="range" id="speedSlider" min="1" max="5" value="3" oninput="updateSpeed()">
+          <div class="btn-row">
+            <button class="btn success" id="btnPlay" onclick="playAlgo()">▶ Play</button>
+            <button class="btn warn" id="btnStep" onclick="stepAlgo()">⏭ Step</button>
+            <button class="btn" id="btnPause" onclick="pauseAlgo()" disabled>⏸ Pause</button>
+            <button class="btn danger" id="btnReset" onclick="resetAlgo()">↺ Reset</button>
+          </div>
+          <div class="city-counter" id="stepCounterMain">Step: 0 / 0</div>
+          <div style="height:4px;background:var(--border);border-radius:2px;margin-top:2px;overflow:hidden;">
+            <div id="progressBar" style="height:100%;width:0%;background:var(--accent);border-radius:2px;transition:width 0.15s;"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- PSEUDOCODE -->
+      <div class="card">
+        <div class="card-header collapsible-header" onclick="toggleCollapse('pseudoBody')">
+          <span style="display:flex;align-items:center;gap:8px;"><span class="dot"></span>Pseudocode</span>
+          <span class="collapse-icon" id="icon-pseudoBody">▼</span>
+        </div>
+        <div class="collapsible-body" id="pseudoBody" style="max-height:500px;">
+          <div class="card-body">
+            <div id="pseudoCode" class="pseudo"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- STEP EXPLANATION -->
+      <div class="card">
+        <div class="card-header"><span class="dot" style="background:var(--yellow)"></span>Step Explanation</div>
+        <div class="card-body">
+          <div class="explain-box" id="explainBox">Select an algorithm and press Play or Step to begin.</div>
+        </div>
+      </div>
+
+      <!-- DECISION RESULT -->
+      <div class="card">
+        <div class="card-header"><span class="dot" style="background:var(--accent4)"></span>Decision Answer</div>
+        <div class="card-body" style="display:flex;flex-direction:column;gap:6px;">
+          <div id="decisionBox" class="explain-box">
+            <strong>Is there a tour of weight ≤ B?</strong><br>Run an algorithm to find out.
+          </div>
+          <div id="tourResultBox" class="tour-result" style="display:none;"></div>
+        </div>
+      </div>
+
+      <!-- LEGEND -->
+      <div class="card">
+        <div class="card-header"><span class="dot" style="background:var(--text3)"></span>Legend</div>
+        <div class="card-body">
+          <div class="legend">
+            <div class="leg-item"><div class="leg-dot" style="background:var(--accent)"></div><span>City node</span></div>
+            <div class="leg-item"><div class="leg-dot" style="background:var(--accent2)"></div><span>Current city</span></div>
+            <div class="leg-item"><div class="leg-dot" style="background:var(--accent3)"></div><span>Visited city</span></div>
+            <div class="leg-item"><div class="leg-line" style="background:var(--accent)"></div><span>Current tour</span></div>
+            <div class="leg-item"><div class="leg-line" style="background:rgba(255,255,255,0.1)"></div><span>All edges</span></div>
+            <div class="leg-item"><div class="leg-line" style="background:var(--red);"></div><span>Removed edge (2-opt)</span></div>
+          </div>
+        </div>
+      </div>
+
+    </div><!-- /left-col -->
+
+    <div class="right-col">
+      <div class="stats-bar">
+        <div class="stat-cell">
+          <div class="stat-label">Cities (n)</div>
+          <div class="stat-value" id="statN">0</div>
+        </div>
+        <div class="stat-cell">
+          <div class="stat-label">Tour Weight</div>
+          <div class="stat-value orange" id="statWeight">—</div>
+        </div>
+        <div class="stat-cell">
+          <div class="stat-label">Operations</div>
+          <div class="stat-value green" id="statOps">0</div>
+        </div>
+        <div class="stat-cell">
+          <div class="stat-label">Bound B</div>
+          <div class="stat-value purple" id="statB">—</div>
+        </div>
+      </div>
+      <div class="canvas-wrap">
+        <canvas id="mainCanvas" width="700" height="520"></canvas>
+      </div>
+      <div class="status-bar">
+        <div class="status-dot" id="statusDot"></div>
+        <div id="statusText">Load a preset or click the canvas to add cities.</div>
+        <div id="stepCounter"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════ COMPARISON TAB -->
+<div id="tab-comparison" class="tab-panel">
+  <div style="padding:16px 20px; background:var(--bg2); border-bottom:1px solid var(--border); display:flex; align-items:center; gap:14px; flex-wrap:wrap;">
+    <span style="font-family:var(--sans);font-weight:700;font-size:14px;">Side-by-Side Comparison</span>
+    <select id="cmpPreset" style="width:160px;">
+      <option value="triangle">Triangle (3 cities)</option>
+      <option value="square">Square (4 cities)</option>
+      <option value="pentagon">Pentagon (5 cities)</option>
+      <option value="badNN">NN Bad Case (6)</option>
+      <option value="random6" selected>Random (6 cities)</option>
+      <option value="random8">Random (8 cities)</option>
+    </select>
+    <button class="btn primary" onclick="runComparison()">▶ Run Both</button>
+    <div id="cmpStatus" style="color:var(--text3);font-size:11px;"></div>
+  </div>
+  <div style="display:flex;flex-direction:column;height:calc(100vh - 165px);">
+    <div class="compare-grid">
+      <div class="compare-pane">
+        <div class="compare-header">
+          <span class="tag tag-bf">BRUTE FORCE</span>
+          <h3 style="color:var(--accent2);">Exact Optimal</h3>
+          <span style="font-size:10px;color:var(--text3);margin-left:auto;">O(n!)</span>
+        </div>
+        <div class="compare-canvas-wrap"><canvas id="cmpBFCanvas" width="420" height="320"></canvas></div>
+        <div class="compare-stats">
+          <div class="compare-stat"><span>Tour Cost: </span><span id="cmpBFCost" style="color:var(--accent2);">—</span></div>
+          <div class="compare-stat"><span>Operations: </span><span id="cmpBFOps" style="color:var(--accent2);">—</span></div>
+          <div class="compare-stat"><span>Permutations: </span><span id="cmpBFPerms" style="color:var(--accent2);">—</span></div>
+        </div>
+      </div>
+      <div class="compare-pane">
+        <div class="compare-header">
+          <span class="tag tag-greedy">NN + 2-OPT</span>
+          <h3 style="color:var(--accent3);">Heuristic</h3>
+          <span style="font-size:10px;color:var(--text3);margin-left:auto;">O(n²)</span>
+        </div>
+        <div class="compare-canvas-wrap"><canvas id="cmpNNCanvas" width="420" height="320"></canvas></div>
+        <div class="compare-stats">
+          <div class="compare-stat"><span>Tour Cost: </span><span id="cmpNNCost" style="color:var(--accent3);">—</span></div>
+          <div class="compare-stat"><span>Operations: </span><span id="cmpNNOps" style="color:var(--accent3);">—</span></div>
+          <div class="compare-stat"><span>Approx Ratio: </span><span id="cmpRatio" style="color:var(--accent);">—</span></div>
+        </div>
+      </div>
+    </div>
+    <div style="padding:14px 20px;background:var(--bg2);border-top:1px solid var(--border);">
+      <div id="cmpAnalysis" class="explain-box" style="font-size:12px;">Run a comparison to see analysis.</div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════ PROOF TAB -->
+<div id="tab-proof" class="tab-panel" style="overflow-y:auto;height:calc(100vh - 107px);">
+<div class="proof-section">
+
+  <h2><span>NP-Completeness</span> Proof</h2>
+  <p style="color:var(--text3);">Traveling Salesman Problem (Decision Version) &nbsp;|&nbsp; Reduction from Hamiltonian Cycle</p>
+
+  <div style="display:flex;gap:8px;margin-bottom:20px;">
+    <span class="tag tag-np">NP-COMPLETE</span>
+    <span class="tag tag-bf">CLO-5 · 20 MARKS</span>
+  </div>
+
+  <h3>Problem Definition</h3>
+  <div class="proof-box">
+    <div class="step-num">Formal Statement</div>
+    <p><strong>TSP-D</strong> = { ⟨G, w, B⟩ : G is a complete weighted graph, w assigns positive integer weights to edges, and there exists a Hamiltonian cycle in G with total weight ≤ B }</p>
+    <div class="math">Input:  Complete graph G = (V, E), weight function w: E → ℤ⁺, bound B ∈ ℤ⁺
+Question: Does G have a tour visiting all |V| = n vertices with total weight ≤ B?</div>
+  </div>
+
+  <h3>Step 1 — TSP-D is in NP</h3>
+  <div class="proof-box">
+    <div class="step-num">Certificate + Polynomial Verifier</div>
+    <p><strong>Certificate:</strong> A permutation π = (v₁, v₂, …, vₙ) of the n cities, representing the claimed tour.</p>
+    <p><strong>Verifier algorithm (runs in polynomial time):</strong></p>
+    <div class="math">VERIFY(⟨G, w, B⟩, π):
+  1. Check |π| = n and all vertices appear exactly once      → O(n)
+  2. Compute total = w(vₙ, v₁) + Σᵢ₌₁ⁿ⁻¹ w(vᵢ, vᵢ₊₁)        → O(n)
+  3. Return (total ≤ B)                                      → O(1)
+  Total verifier runtime: O(n) ⊆ poly(|⟨G,w,B⟩|)  ✓</div>
+    <div class="highlight-box">
+      <strong>Conclusion:</strong> Since a valid certificate can be verified in polynomial time, TSP-D ∈ NP. ✓
+    </div>
+  </div>
+
+  <h3>Step 2 — NP-Hardness via Reduction from Hamiltonian Cycle</h3>
+  <div class="proof-box">
+    <div class="step-num">Reduction Construction</div>
+    <p>We show <strong>HAM-CYCLE ≤ₚ TSP-D</strong>. Given an arbitrary instance ⟨G⟩ of Hamiltonian Cycle (undirected graph G = (V, E)), construct a TSP-D instance as follows:</p>
+    <div class="math">Construction f(⟨G⟩) = ⟨G', w, n⟩:
+  G' = complete graph on V  (same vertex set)
+  
+  For each pair of vertices u, v ∈ V:
+    w(u, v) = 1   if {u,v} ∈ E   (edge exists in G)
+    w(u, v) = 2   if {u,v} ∉ E   (edge absent in G)
+    
+  Bound B = n   (where n = |V|)</div>
+    <p>This construction runs in <strong>O(n²)</strong> time (examine each pair of vertices once) — polynomial in |G|. ✓</p>
+  </div>
+
+  <div class="proof-box">
+    <div class="step-num">Forward Direction (→): G has Ham. Cycle ⟹ G' has tour of weight ≤ n</div>
+    <p>Suppose G has a Hamiltonian cycle C = (v₁, v₂, …, vₙ, v₁). Then:</p>
+    <div class="math">• C visits all n vertices exactly once
+• Every edge {vᵢ, vᵢ₊₁} and {vₙ, v₁} is in E (by definition of Ham. Cycle)
+• By our weight function, each such edge has weight w = 1
+• Total weight = n × 1 = n ≤ B = n  ✓</div>
+    <div class="highlight-box"><strong>Therefore:</strong> The same tour C is a valid TSP-D tour of weight exactly n ≤ B. ✓</div>
+  </div>
+
+  <div class="proof-box">
+    <div class="step-num">Backward Direction (←): G' has tour of weight ≤ n ⟹ G has Ham. Cycle</div>
+    <p>Suppose G' has a tour T with total weight ≤ n. Then:</p>
+    <div class="math">• T visits all n vertices → T has exactly n edges
+• Each edge has weight ≥ 1 (minimum possible)
+• Total weight ≥ n × 1 = n
+• But we assumed total weight ≤ n
+• Therefore total weight = n exactly
+• This means every edge in T must have weight exactly 1
+• By construction, weight 1 ⟺ edge exists in G
+• Therefore all n edges of T are in E</div>
+    <div class="highlight-box"><strong>Therefore:</strong> Tour T is a Hamiltonian cycle in the original graph G. ✓</div>
+  </div>
+
+  <div class="proof-box">
+    <div class="step-num">Conclusion</div>
+    <div class="math">• TSP-D ∈ NP                                          (Step 1) ✓
+• HAM-CYCLE ≤ₚ TSP-D  (polynomial-time reduction)    (Step 2) ✓
+• HAM-CYCLE is NP-complete                            (known result)
+• Therefore TSP-D is NP-complete                      (by definition) ✓</div>
+  </div>
+
+  <h3>Interactive Reduction Diagram</h3>
+  <p>The diagram below shows the reduction construction. Select a Hamiltonian Cycle instance and see how the TSP-D instance is built.</p>
+  <div style="display:flex;gap:10px;margin-bottom:12px;flex-wrap:wrap;">
+    <button class="btn primary" onclick="drawReduction('has')">Example WITH Ham. Cycle</button>
+    <button class="btn warn" onclick="drawReduction('no')">Example WITHOUT Ham. Cycle</button>
+  </div>
+  <canvas id="reductionCanvas" height="280"></canvas>
+  <div id="reductionExplain" class="explain-box" style="margin-top:10px;">Click a button above to visualize the reduction.</div>
+
+  <h3>NP vs P — Context</h3>
+  <div class="proof-box">
+    <p>TSP is one of the most studied NP-complete problems. The decision version is in NP (cert. verifiable in poly time) but no polynomial-time exact algorithm is known. The optimization version (find minimum tour) is NP-hard. The best exact algorithms run in O(n² · 2ⁿ) via dynamic programming (Held-Karp, 1962). For practical instances, heuristics like nearest-neighbor and 2-opt are used.</p>
+    <div class="math">Complexity class hierarchy (assuming P ≠ NP):
+  P  ⊊  NP  ⊇  NP-complete
+  TSP-D ∈ NP-complete
+  If P = NP, then TSP-D ∈ P (polynomial exact solution exists)</div>
+  </div>
+
+</div>
+</div>
+</div>
+
+<!-- ═══════════════════════════════════════════════ GROWTH TAB -->
+<div id="tab-growth" class="tab-panel" style="overflow-y:auto;height:calc(100vh - 107px);">
+  <div style="padding:20px 24px;">
+    <div style="display:flex;align-items:center;gap:16px;margin-bottom:16px;flex-wrap:wrap;">
+      <div>
+        <h2 style="font-family:var(--sans);font-size:18px;font-weight:800;">Growth Rate Analysis</h2>
+        <p style="color:var(--text3);font-size:12px;">Brute Force O(n!) vs Nearest-Neighbor O(n²) vs 2-opt O(n² · k)</p>
+      </div>
+      <button class="btn primary" onclick="drawGrowthChart()" style="margin-left:auto;">Redraw Chart</button>
+    </div>
+    <canvas id="growthCanvas" height="380"></canvas>
+    <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-top:16px;">
+      <div class="proof-box">
+        <div class="step-num" style="color:var(--accent2);">Brute Force — O(n!)</div>
+        <p>Enumerates all (n-1)!/2 distinct tours. For n=12, that's 19,958,400 tours. Exact but exponential — infeasible beyond ~15 cities.</p>
+        <div class="math">n=4:  3 tours
+n=6:  60 tours
+n=8:  2,520 tours
+n=10: 181,440 tours
+n=12: 19,958,400 tours</div>
+      </div>
+      <div class="proof-box">
+        <div class="step-num" style="color:var(--accent3);">Nearest-Neighbor — O(n²)</div>
+        <p>Greedy heuristic: always go to closest unvisited city. Fast but can produce suboptimal tours — the approximation ratio can be as bad as O(log n) in the worst case.</p>
+        <div class="math">Worst-case ratio: ≈ ½(⌈log₂n⌉ + 1)
+Typical practical ratio: 1.2× to 1.5× optimal</div>
+      </div>
+      <div class="proof-box">
+        <div class="step-num" style="color:var(--accent);">NN + 2-Opt — O(n² · k)</div>
+        <p>Iteratively swaps pairs of edges if the swap reduces tour length. k = number of improvement passes (usually small). Significantly better than pure NN in practice.</p>
+        <div class="math">2-opt swap: remove edges (i,i+1) and (j,j+1)
+Add edges (i,j) and (i+1,j+1)
+Repeat until no improvement found</div>
+      </div>
+    </div>
+
+    <div class="proof-box" style="margin-top:16px;">
+      <div class="step-num">⚠ Counterexample: When Nearest-Neighbor Fails</div>
+      <p>Consider 6 cities arranged so that NN greedily picks short local edges but misses a globally better tour. Load the "NN Bad Case" preset in the Visualizer to see this concretely. The NN tour visits cities in an order that backtracks, while the optimal tour uses a shorter overall path.</p>
+      <div class="math">Bad NN Example: cities at (0,0),(1,0),(2,0),(3,0),(4,0),(2,3)
+NN from city 0: 0→1→2→3→4→5→0  (may be suboptimal)
+The NN can produce tours up to 25% worse than optimal on structured inputs.</div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════ OVERVIEW TAB -->
+<div id="tab-overview" class="tab-panel" style="overflow-y:auto;height:calc(100vh - 107px);">
+<div class="proof-section">
+
+  <h2>Educational <span>Overview</span></h2>
+  <p>A comprehensive guide to the Traveling Salesman Problem, NP-completeness, and algorithm design.</p>
+
+  <!-- Collapsible 1 -->
+  <div class="card" style="margin-bottom:14px;">
+    <div class="card-header collapsible-header" onclick="toggleCollapse('ov1')">
+      <span style="display:flex;align-items:center;gap:8px;"><span class="dot" style="background:var(--accent4)"></span>What is TSP?</span>
+      <span class="collapse-icon" id="icon-ov1">▼</span>
+    </div>
+    <div class="collapsible-body" id="ov1" style="max-height:500px;">
+      <div class="card-body" style="padding:16px 18px;">
+        <p>The <strong>Traveling Salesman Problem</strong> is one of the most famous problems in computer science and operations research. A salesman must visit n cities exactly once and return to the starting city, minimizing total travel distance (or cost).</p>
+        <p><strong>Decision version:</strong> Given cities, edge weights, and a bound B — does there exist a tour of total weight ≤ B? (YES/NO answer)</p>
+        <p><strong>Optimization version:</strong> Find the minimum weight tour. This is NP-hard.</p>
+        <p><strong>Real-world applications:</strong> Package delivery routing (UPS, FedEx), circuit board drilling, DNA sequencing, telescope scheduling, microchip fabrication, vehicle routing.</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- Collapsible 2 -->
+  <div class="card" style="margin-bottom:14px;">
+    <div class="card-header collapsible-header" onclick="toggleCollapse('ov2')">
+      <span style="display:flex;align-items:center;gap:8px;"><span class="dot" style="background:var(--accent4)"></span>What is NP-Completeness?</span>
+      <span class="collapse-icon" id="icon-ov2">▼</span>
+    </div>
+    <div class="collapsible-body" id="ov2" style="max-height:500px;">
+      <div class="card-body" style="padding:16px 18px;">
+        <p><strong>P</strong> = problems solvable in polynomial time. <strong>NP</strong> = problems where solutions are verifiable in polynomial time. <strong>NP-complete</strong> = hardest problems in NP; every NP problem reduces to them.</p>
+        <p>A problem X is NP-complete if: (1) X ∈ NP, and (2) every NP problem reduces to X in polynomial time. Equivalently, it suffices to show reduction from any known NP-complete problem.</p>
+        <p>If any NP-complete problem is in P, then P = NP (all NP problems are in P). This is the famous <strong>P vs NP</strong> open problem.</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- Collapsible 3 -->
+  <div class="card" style="margin-bottom:14px;">
+    <div class="card-header collapsible-header" onclick="toggleCollapse('ov3')">
+      <span style="display:flex;align-items:center;gap:8px;"><span class="dot" style="background:var(--accent3)"></span>Nearest-Neighbor Heuristic</span>
+      <span class="collapse-icon" id="icon-ov3">▼</span>
+    </div>
+    <div class="collapsible-body" id="ov3" style="max-height:500px;">
+      <div class="card-body" style="padding:16px 18px;">
+        <p><strong>Design paradigm: Greedy</strong></p>
+        <p>Algorithm: Start at any city. Repeatedly visit the nearest unvisited city. Return to start when all cities are visited.</p>
+        <div class="math">NN Algorithm:
+  tour = [start]
+  visited = {start}
+  while |tour| &lt; n:
+    next = argmin{ dist(current, v) : v ∉ visited }
+    tour.append(next)
+    visited.add(next)
+  tour.append(start)  // close the cycle</div>
+        <p><strong>Why it can fail:</strong> Greedy choices look locally optimal but ignore global structure. The algorithm can "paint itself into a corner" — taking short edges early forces long edges later.</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- Collapsible 4 -->
+  <div class="card" style="margin-bottom:14px;">
+    <div class="card-header collapsible-header" onclick="toggleCollapse('ov4')">
+      <span style="display:flex;align-items:center;gap:8px;"><span class="dot" style="background:var(--accent)"></span>2-opt Local Search Improvement</span>
+      <span class="collapse-icon" id="icon-ov4">▼</span>
+    </div>
+    <div class="collapsible-body" id="ov4" style="max-height:500px;">
+      <div class="card-body" style="padding:16px 18px;">
+        <p><strong>Design paradigm: Local Search / Iterative Improvement</strong></p>
+        <p>After building an initial tour (e.g., via NN), 2-opt iteratively improves it by removing two edges and reconnecting in a different way. If the swap reduces tour length, keep it.</p>
+        <div class="math">2-opt Improvement:
+  improved = true
+  while improved:
+    improved = false
+    for i in 0..n-2:
+      for j in i+2..n:
+        if dist(tour[i], tour[j]) + dist(tour[i+1], tour[j+1])
+         &lt; dist(tour[i], tour[i+1]) + dist(tour[j], tour[j+1]):
+          reverse(tour, i+1, j)  // reconnect
+          improved = true</div>
+        <p><strong>Complexity:</strong> Each pass is O(n²). In practice, converges in a small number of passes. Typical improvement over NN: 10–20%.</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- Worked Example -->
+  <div class="card" style="margin-bottom:14px;">
+    <div class="card-header collapsible-header" onclick="toggleCollapse('ov5')">
+      <span style="display:flex;align-items:center;gap:8px;"><span class="dot" style="background:var(--yellow)"></span>Worked Example — 4 Cities</span>
+      <span class="collapse-icon" id="icon-ov5">▼</span>
+    </div>
+    <div class="collapsible-body" id="ov5" style="max-height:600px;">
+      <div class="card-body" style="padding:16px 18px;">
+        <p>Cities: A=(0,0), B=(1,0), C=(1,1), D=(0,1)</p>
+        <div class="math">Distances (Euclidean):
+  d(A,B)=1, d(B,C)=1, d(C,D)=1, d(D,A)=1
+  d(A,C)=√2≈1.41, d(B,D)=√2≈1.41
+
+Brute Force: all (4-1)!/2 = 3 distinct tours:
+  A→B→C→D→A: 1+1+1+1 = 4.0  ← OPTIMAL
+  A→B→D→C→A: 1+√2+1+√2 = 2+2√2 ≈ 4.83
+  A→C→B→D→A: √2+1+√2+1 = 2+2√2 ≈ 4.83
+
+Nearest-Neighbor from A:
+  A → B (dist 1) → C (dist 1) → D (dist 1) → A (dist 1) = 4.0  ← OPTIMAL here!
+
+Decision check (B=4): Does tour of weight ≤ 4 exist? YES (optimal = 4.0)</div>
+      </div>
+    </div>
+  </div>
+
+</div>
+</div>
+
+<script>
+// ═══════════════════════════════════════════════════════════════════
+// STATE
+// ═══════════════════════════════════════════════════════════════════
+let cities = [];
+let mode = 'brute'; // 'brute' | 'nn' | '2opt'
+let algoSteps = [];
+let stepIndex = 0;
+let playing = false;
+let playTimer = null;
+let ops = 0;
+let currentTour = null;
+let bestTour = null;
+let bestWeight = Infinity;
+let animHighlight = -1;
+
+const SPEEDS = [800, 400, 180, 80, 20];
+let speedIdx = 2;
+
+const canvas = document.getElementById('mainCanvas');
+const ctx = canvas.getContext('2d');
+
+// ─── HELPERS ───────────────────────────────────────────────────────
+function factorial(n){let r=1;for(let i=2;i<=n;i++)r*=i;return r;}
+
+// ═══════════════════════════════════════════════════════════════════
+// PRESETS
+// ═══════════════════════════════════════════════════════════════════
+const PRESETS = {
+  triangle: [{x:350,y:100},{x:160,y:400},{x:540,y:400}],
+  square: [{x:160,y:120},{x:540,y:120},{x:540,y:400},{x:160,y:400}],
+  pentagon: (()=>{let c=[];for(let i=0;i<5;i++){let a=i*2*Math.PI/5-Math.PI/2;c.push({x:350+200*Math.cos(a),y:260+200*Math.sin(a)});}return c;})(),
+  badNN: [{x:50,y:260},{x:150,y:260},{x:350,y:260},{x:550,y:260},{x:650,y:260},{x:350,y:60}],
+  random6: null,
+  random8: null,
+  random10: null,
+};
+// runDecisionCheck removed — updateDecision() handles this correctly
+function scaleCities(raw, w, h, pad=50) {
+  let xs=raw.map(c=>c.x), ys=raw.map(c=>c.y);
+  let minX=Math.min(...xs),maxX=Math.max(...xs),minY=Math.min(...ys),maxY=Math.max(...ys);
+  let rangeX=maxX-minX||1, rangeY=maxY-minY||1;
+  return raw.map(c=>({
+    x: pad + (c.x-minX)/rangeX*(w-2*pad),
+    y: pad + (c.y-minY)/rangeY*(h-2*pad)
+  }));
+}
+
+function loadPreset(name) {
+  resetAlgo();
+  if(name==='random6') { generateRandomN(6); return; }
+  if(name==='random8') { generateRandomN(8); return; }
+  if(name==='random10') { generateRandomN(10); return; }
+  cities = scaleCities(PRESETS[name], canvas.width, canvas.height);
+  afterCitiesSet();
+}
+
+function generateRandom() {
+  let n = parseInt(document.getElementById('numCities').value)||6;
+  generateRandomN(n);
+}
+function generateRandomN(n) {
+  resetAlgo();
+  cities = [];
+  for(let i=0;i<n;i++) cities.push({x:60+Math.random()*(canvas.width-120), y:60+Math.random()*(canvas.height-120)});
+  afterCitiesSet();
+}
+function afterCitiesSet() {
+  document.getElementById('statN').textContent = cities.length;
+  updateBoundDisplay();
+  buildAlgoSteps();
+  drawCanvas();
+  setStatus('idle', `${cities.length} cities loaded. Press Play or Step.`);
+}
+
+// ═══════════════════════════════════════════════════════════════════
+// DISTANCE
+// ═══════════════════════════════════════════════════════════════════
+function dist(a,b){ return Math.sqrt((a.x-b.x)**2+(a.y-b.y)**2); }
+function tourWeight(tour){
+  let w=0;
+  for(let i=0;i<tour.length;i++) w+=dist(cities[tour[i]],cities[tour[(i+1)%tour.length]]);
+  return w;
+}
+
+// ═══════════════════════════════════════════════════════════════════
+// ALGORITHM STEP BUILDERS
+// ═══════════════════════════════════════════════════════════════════
+function buildAlgoSteps() {
+  algoSteps = [];
+  stepIndex = 0;
+  ops = 0;
+  currentTour = null;
+  bestTour = null;
+  bestWeight = Infinity;
+  if(mode === 'brute') buildBFSteps();
+  else if(mode === 'nn') buildNNSteps();
+  else if(mode === '2opt') build2OptSteps();
+  document.getElementById('stepCounterMain').textContent = `Step: 0 / ${algoSteps.length}`;
+  renderPseudo();
+}
+
+// ── BRUTE FORCE ──
+function buildBFSteps() {
+  const n = cities.length;
+  if(n === 0) return;
+
+  // For n > 8, brute force would freeze the browser (>40k permutations).
+  // Use NN+2opt as a fast proxy and clearly communicate this.
+  if(n > 8) {
+    const permCount = factorial(n-1) / 2;
+    algoSteps.push({type:'info', pseudo:0, highlight:[],
+      msg:`n=${n}: brute force needs ${permCount.toLocaleString()} permutations — too slow to animate. Using NN+2opt instead.`});
+    let visited=new Array(n).fill(false), tour=[0]; visited[0]=true;
+    while(tour.length<n){
+      let cur=tour[tour.length-1],best=-1,bestD=Infinity;
+      for(let j=0;j<n;j++){if(!visited[j]){let d=dist(cities[cur],cities[j]);if(d<bestD){bestD=d;best=j;}}}
+      tour.push(best); visited[best]=true;
+    }
+    let improved=true;
+    while(improved){
+      improved=false;
+      for(let i=0;i<n-1;i++) for(let j=i+2;j<n;j++){
+        let a=tour[i],b=tour[i+1],c=tour[j],d=tour[(j+1)%n];
+        let before=dist(cities[a],cities[b])+dist(cities[c],cities[d]);
+        let after=dist(cities[a],cities[c])+dist(cities[b],cities[d]);
+        if(after<before-0.001){
+          let sub=tour.slice(i+1,j+1).reverse();
+          for(let k=0;k<sub.length;k++) tour[i+1+k]=sub[k];
+          improved=true;
+        }
+      }
+    }
+    let w=tourWeight(tour);
+    algoSteps.push({type:'done', tour:[...tour], weight:w, ops:permCount, pseudo:5,
+      highlight:[...tour], msg:`Best tour (NN+2opt): weight = ${w.toFixed(1)}. Brute force skipped for n=${n}.`});
+    return;
+  }
+
+  // n ≤ 8: full animated brute force
+  const perms = [];
+  const base = Array.from({length:n-1},(_,i)=>i+1);
+  (function permute(arr, current) {
+    if(!arr.length){ perms.push([0,...current]); return; }
+    for(let i=0;i<arr.length;i++){
+      let rest=[...arr]; rest.splice(i,1);
+      permute(rest,[...current,arr[i]]);
+    }
+  })(base, []);
+
+  algoSteps.push({type:'init', pseudo:0, highlight:[],
+    msg:`Starting brute-force: ${perms.length} permutation(s) to check.`});
+  let opCount=0, runningBest=Infinity;
+  for(let p of perms){
+    opCount++;
+    let w=tourWeight(p);
+    const isBest = w < runningBest - 0.001;
+    if(isBest) runningBest=w;
+    algoSteps.push({
+      type: isBest?'newbest':'check',
+      tour: p, weight: w, ops: opCount,
+      pseudo: isBest?4:3, highlight: p,
+      msg: isBest
+        ? `✓ New best! Weight = ${w.toFixed(1)} (checked ${opCount}/${perms.length})`
+        : `Permutation ${opCount}/${perms.length}: weight = ${w.toFixed(1)} — not better`
+    });
+  }
+  const finalBest = algoSteps.filter(s=>s.type==='newbest').pop();
+  if(finalBest) algoSteps.push({type:'done', tour:finalBest.tour, weight:finalBest.weight,
+    ops:opCount, pseudo:5, highlight:finalBest.tour,
+    msg:`Done! Optimal tour weight = ${finalBest.weight.toFixed(1)}`});
+}
+
+// ── NEAREST NEIGHBOR ──
+function buildNNSteps() {
+  const n = cities.length;
+  if(n===0) return;
+  let visited = new Array(n).fill(false);
+  let tour = [0];
+  visited[0] = true;
+  let opCount = 0;
+
+  algoSteps.push({type:'nn_init',current:0,tour:[0],visited:[...visited],ops:0,pseudo:0,highlight:[0],msg:`Start at city 0. Mark as visited.`});
+
+  while(tour.length < n) {
+    let cur = tour[tour.length-1];
+    let best=-1, bestD=Infinity;
+    for(let j=0;j<n;j++){
+      if(!visited[j]){
+        opCount++;
+        let d=dist(cities[cur],cities[j]);
+        algoSteps.push({type:'nn_check',current:cur,checking:j,tour:[...tour],visited:[...visited],ops:opCount,pseudo:2,highlight:[cur,j],dist:d.toFixed(1),msg:`Checking city ${j}: distance from city ${cur} = ${d.toFixed(1)}`});
+        if(d<bestD){bestD=d;best=j;}
+      }
+    }
+    tour.push(best);
+    visited[best]=true;
+    algoSteps.push({type:'nn_move',current:best,tour:[...tour],visited:[...visited],ops:opCount,pseudo:3,highlight:[...tour],msg:`Move to nearest city ${best} (dist = ${bestD.toFixed(1)}). Cities visited: ${tour.length}/${n}`});
+  }
+  let w=tourWeight(tour);
+  algoSteps.push({type:'done',tour:[...tour],weight:w,ops:opCount,pseudo:4,highlight:[...tour],msg:`Tour complete! Weight = ${w.toFixed(1)}`});
+}
+
+// ── 2-OPT ──
+function build2OptSteps() {
+  const n = cities.length;
+  if(n===0) return;
+  // first build NN tour
+  let visited=new Array(n).fill(false);
+  let tour=[0]; visited[0]=true;
+  while(tour.length<n){
+    let cur=tour[tour.length-1],best=-1,bestD=Infinity;
+    for(let j=0;j<n;j++){if(!visited[j]){let d=dist(cities[cur],cities[j]);if(d<bestD){bestD=d;best=j;}}}
+    tour.push(best);visited[best]=true;
+  }
+  let nnWeight=tourWeight(tour);
+  algoSteps.push({type:'init',tour:[...tour],weight:nnWeight,ops:0,pseudo:0,highlight:[...tour],msg:`Nearest-neighbor tour built. Weight = ${nnWeight.toFixed(1)}. Now applying 2-opt improvements.`});
+
+  let opCount=0, improved=true, pass=0;
+  while(improved){
+    improved=false; pass++;
+    for(let i=0;i<n-1;i++){
+      for(let j=i+2;j<n;j++){
+        opCount++;
+        let a=tour[i],b=tour[i+1],c=tour[j],d=tour[(j+1)%n];
+        let before=dist(cities[a],cities[b])+dist(cities[c],cities[d]);
+        let after=dist(cities[a],cities[c])+dist(cities[b],cities[d]);
+        if(after<before-0.001){
+          // do the swap
+          let newTour=[...tour];
+          let sub=newTour.slice(i+1,j+1).reverse();
+          for(let k=0;k<sub.length;k++) newTour[i+1+k]=sub[k];
+          let gain=before-after;
+          algoSteps.push({type:'2opt_swap',tour:[...newTour],removeEdges:[a,b,c,d],ops:opCount,pseudo:4,highlight:[...newTour],msg:`Pass ${pass}: 2-opt swap! Remove edges (${a}→${b}) and (${c}→${d}). Gain = ${gain.toFixed(1)}`});
+          tour=newTour;
+          improved=true;
+        } else {
+          // Only record check-steps for small n to avoid huge step arrays
+          if(n<=7 && algoSteps.length<500)
+            algoSteps.push({type:'2opt_check',tour:[...tour],checking:[a,b,c,d],ops:opCount,pseudo:3,highlight:[...tour],msg:`Pass ${pass}: Check swap (${a}↔${b}, ${c}↔${d}): no improvement (Δ=${(before-after).toFixed(1)})`});
+        }
+      }
+    }
+  }
+  let fw=tourWeight(tour);
+  algoSteps.push({type:'done',tour:[...tour],weight:fw,ops:opCount,pseudo:5,highlight:[...tour],msg:`2-opt converged after ${pass} pass(es). Final weight = ${fw.toFixed(1)}`});
+}
+
+// ═══════════════════════════════════════════════════════════════════
+// PLAYBACK
+// ═══════════════════════════════════════════════════════════════════
+function playAlgo(){
+  if(cities.length<3){setStatus('error','Need at least 3 cities!');return;}
+  // Restart cleanly without calling resetAlgo/pauseAlgo (which sets playing=false)
+  if(stepIndex>=algoSteps.length){
+    stepIndex=0; ops=0; currentTour=null; bestTour=null; bestWeight=Infinity;
+    buildAlgoSteps();
+    document.getElementById('statWeight').textContent='—';
+    document.getElementById('statOps').textContent='0';
+    drawCanvas();
+  }
+  playing=true;
+  document.getElementById('btnPlay').disabled=true;
+  document.getElementById('btnStep').disabled=true;
+  document.getElementById('btnPause').disabled=false;
+  setStatus('running','Running…');
+  scheduleNext();
+}
+function scheduleNext(){
+  if(!playing) return;
+  playTimer=setTimeout(()=>{
+    if(stepIndex<algoSteps.length){
+      applyStep(algoSteps[stepIndex]);
+      stepIndex++;
+      document.getElementById('stepCounterMain').textContent=`Step: ${stepIndex} / ${algoSteps.length}`;
+      const pct = algoSteps.length ? (stepIndex/algoSteps.length*100).toFixed(1) : 0;
+      document.getElementById('progressBar').style.width = pct+'%';
+      scheduleNext();
+    } else {
+      playing=false;
+      document.getElementById('btnPlay').disabled=false;
+      document.getElementById('btnStep').disabled=false;
+      document.getElementById('btnPause').disabled=true;
+      setStatus('done','Algorithm complete!');
+    }
+  }, SPEEDS[speedIdx]);
+}
+function stepAlgo(){
+  if(cities.length<3){setStatus('error','Need at least 3 cities!');return;}
+  if(playing) return;
+  if(stepIndex>=algoSteps.length){ setStatus('done','Algorithm already complete. Reset to restart.'); return; }
+  applyStep(algoSteps[stepIndex]);
+  stepIndex++;
+  document.getElementById('stepCounterMain').textContent=`Step: ${stepIndex} / ${algoSteps.length}`;
+  const pct2 = algoSteps.length ? (stepIndex/algoSteps.length*100).toFixed(1) : 0;
+  document.getElementById('progressBar').style.width = pct2+'%';
+  if(stepIndex>=algoSteps.length) setStatus('done','Algorithm complete!');
+}
+function pauseAlgo(){
+  playing=false;
+  clearTimeout(playTimer);
+  document.getElementById('btnPlay').disabled=false;
+  document.getElementById('btnStep').disabled=false;
+  document.getElementById('btnPause').disabled=true;
+  setStatus('idle','Paused.');
+}
+function resetAlgo(){
+  pauseAlgo();
+  stepIndex=0; ops=0; currentTour=null; bestTour=null; bestWeight=Infinity;
+  algoSteps=[];
+  document.getElementById('statWeight').textContent='—';
+  document.getElementById('statOps').textContent='0';
+  document.getElementById('statB').textContent=getBound()===0?'auto':getBound().toFixed(0);
+  document.getElementById('stepCounterMain').textContent='Step: 0 / 0';
+  document.getElementById('progressBar').style.width='0%';
+  document.getElementById('explainBox').textContent='Select an algorithm and press Play or Step to begin.';
+  document.getElementById('decisionBox').innerHTML='<strong>Is there a tour of weight ≤ B?</strong><br>Run an algorithm to find out.';
+  document.getElementById('tourResultBox').style.display='none';
+  setStatus('idle','Reset.');
+  drawCanvas();
+  if(cities.length>0) buildAlgoSteps();
+}
+
+function applyStep(step){
+  ops = step.ops||ops;
+  document.getElementById('statOps').textContent=ops;
+  document.getElementById('explainBox').innerHTML=step.msg||'';
+  highlightPseudo(step.pseudo);
+  if(step.type==='done'){
+    currentTour=step.tour;
+    bestTour=step.tour;
+    bestWeight=step.weight;
+    document.getElementById('statWeight').textContent=step.weight?step.weight.toFixed(1):'—';
+    updateDecision(step.weight);
+    document.getElementById('tourResultBox').style.display='block';
+    document.getElementById('tourResultBox').textContent='Tour: '+step.tour.map(i=>`C${i}`).join(' → ')+` → C${step.tour[0]}`;
+  } else if(step.type==='newbest'||step.type==='nn_move'||step.type==='2opt_swap'){
+    currentTour=step.tour;
+    if(step.weight) { bestWeight=step.weight; document.getElementById('statWeight').textContent=step.weight.toFixed(1); }
+  } else {
+    currentTour=step.tour||currentTour;
+  }
+  // Draw
+  drawCanvas(step);
+}
+
+function updateDecision(weight) {
+  let B = getBound();
+  if(B===0) B=weight;
+  document.getElementById('statB').textContent = B.toFixed(0);
+  let yes = weight <= B+0.001;
+  document.getElementById('decisionBox').innerHTML =
+    `<strong>Is there a tour of weight ≤ ${B.toFixed(1)}?</strong><br>` +
+    `Tour weight = ${weight.toFixed(1)}<br>` +
+    `<span style="font-size:15px;font-weight:700;color:${yes?'var(--accent3)':'var(--red)'}">${yes?'✓ YES':'✗ NO'}</span>`;
+}
+
+function getBound() {
+  return parseFloat(document.getElementById('boundB').value)||0;
+}
+function updateBoundDisplay(){
+  document.getElementById('statB').textContent = getBound()===0?'auto':getBound().toFixed(0);
+}
+function onBoundChange(){
+  updateBoundDisplay();
+  // Re-evaluate decision if a tour is already shown
+  if(bestWeight && bestWeight < Infinity) updateDecision(bestWeight);
+}
+
+// ═══════════════════════════════════════════════════════════════════
+// DRAW
+// ═══════════════════════════════════════════════════════════════════
+function drawCanvas(step) {
+  const W=canvas.width, H=canvas.height;
+  ctx.clearRect(0,0,W,H);
+
+  // grid
+  ctx.strokeStyle='rgba(255,255,255,0.02)'; ctx.lineWidth=1;
+  for(let x=0;x<W;x+=50){ctx.beginPath();ctx.moveTo(x,0);ctx.lineTo(x,H);ctx.stroke();}
+  for(let y=0;y<H;y+=50){ctx.beginPath();ctx.moveTo(0,y);ctx.lineTo(W,y);ctx.stroke();}
+
+  if(cities.length===0) return;
+
+  // all edges (faint)
+  ctx.strokeStyle='rgba(255,255,255,0.05)'; ctx.lineWidth=1;
+  for(let i=0;i<cities.length;i++){
+    for(let j=i+1;j<cities.length;j++){
+      ctx.beginPath();ctx.moveTo(cities[i].x,cities[i].y);ctx.lineTo(cities[j].x,cities[j].y);ctx.stroke();
+    }
+  }
+
+  // current tour edges
+  if(currentTour && currentTour.length>1){
+    // removed edges highlight (2opt)
+    if(step&&step.type==='2opt_swap'&&step.removeEdges){
+      let [a,b,c,d]=step.removeEdges;
+      ctx.strokeStyle=getComputedStyle(document.documentElement).getPropertyValue('--red').trim()||'#ff4455';
+      ctx.lineWidth=2; ctx.setLineDash([5,5]);
+      ctx.beginPath();ctx.moveTo(cities[a].x,cities[a].y);ctx.lineTo(cities[b].x,cities[b].y);ctx.stroke();
+      ctx.beginPath();ctx.moveTo(cities[c].x,cities[c].y);ctx.lineTo(cities[d].x,cities[d].y);ctx.stroke();
+      ctx.setLineDash([]);
+    }
+
+    // tour edges
+    ctx.strokeStyle='#00d4ff'; ctx.lineWidth=2; ctx.setLineDash([]);
+    for(let i=0;i<currentTour.length;i++){
+      let a=currentTour[i], b=currentTour[(i+1)%currentTour.length];
+      ctx.beginPath();ctx.moveTo(cities[a].x,cities[a].y);ctx.lineTo(cities[b].x,cities[b].y);ctx.stroke();
+      // arrow midpoint
+      let mx=(cities[a].x+cities[b].x)/2, my=(cities[a].y+cities[b].y)/2;
+      let ang=Math.atan2(cities[b].y-cities[a].y,cities[b].x-cities[a].x);
+      ctx.save(); ctx.translate(mx,my); ctx.rotate(ang);
+      ctx.fillStyle='rgba(0,212,255,0.4)';
+      ctx.beginPath();ctx.moveTo(5,0);ctx.lineTo(-4,3);ctx.lineTo(-4,-3);ctx.closePath();ctx.fill();
+      ctx.restore();
+      // edge weight label (show when tour is complete)
+      if(step && step.type==='done'){
+        let edgeDist=dist(cities[a],cities[b]);
+        ctx.fillStyle='rgba(0,212,255,0.7)'; ctx.font='9px JetBrains Mono,monospace';
+        ctx.textAlign='center'; ctx.textBaseline='middle';
+        // offset label slightly perpendicular to edge
+        let nx=Math.sin(ang)*10, ny=-Math.cos(ang)*10;
+        ctx.fillText(edgeDist.toFixed(0), mx+nx, my+ny);
+      }
+    }
+  }
+
+  // checking edge highlight
+  if(step && step.type==='nn_check'){
+    let cur=step.current, checking=step.checking;
+    ctx.strokeStyle='rgba(255,209,102,0.5)'; ctx.lineWidth=1.5; ctx.setLineDash([4,4]);
+    ctx.beginPath();ctx.moveTo(cities[cur].x,cities[cur].y);ctx.lineTo(cities[checking].x,cities[checking].y);ctx.stroke();
+    ctx.setLineDash([]);
+  }
+  if(step && step.type==='2opt_check' && step.checking){
+    let [a,b,c,d]=step.checking;
+    ctx.strokeStyle='rgba(255,209,102,0.3)'; ctx.lineWidth=1; ctx.setLineDash([3,5]);
+    ctx.beginPath();ctx.moveTo(cities[a].x,cities[a].y);ctx.lineTo(cities[b].x,cities[b].y);ctx.stroke();
+    ctx.beginPath();ctx.moveTo(cities[c].x,cities[c].y);ctx.lineTo(cities[d].x,cities[d].y);ctx.stroke();
+    ctx.setLineDash([]);
+  }
+
+  // cities
+  for(let i=0;i<cities.length;i++){
+    let c=cities[i];
+    let isChecking = step&&(step.checking===i||(Array.isArray(step.checking)&&step.checking.includes(i)));
+    let isCurrent = step&&(step.current===i);
+    let isInTour = currentTour&&currentTour.includes(i);
+
+    let color='#00d4ff';
+    let r=7;
+    if(isCurrent){color='#ff6b35';r=10;}
+    else if(isChecking){color='#ffd166';r=9;}
+    else if(isInTour){color='#7fff6e';r=8;}
+
+    // glow
+    ctx.beginPath(); ctx.arc(c.x,c.y,r+4,0,2*Math.PI);
+    ctx.fillStyle=color.replace('#','').length===6?hexToRgba(color,0.15):'rgba(0,212,255,0.1)';
+    ctx.fill();
+
+    ctx.beginPath(); ctx.arc(c.x,c.y,r,0,2*Math.PI);
+    ctx.fillStyle=color; ctx.fill();
+    ctx.strokeStyle='#07090f'; ctx.lineWidth=2; ctx.stroke();
+
+    // label
+    ctx.fillStyle='#e2eaf5'; ctx.font='bold 11px JetBrains Mono,monospace';
+    ctx.textAlign='center'; ctx.textBaseline='middle';
+    ctx.fillText(i, c.x, c.y);
+
+    // dist label during check
+    if(step && step.type==='nn_check' && i===step.checking){
+      ctx.fillStyle='#ffd166'; ctx.font='10px JetBrains Mono,monospace';
+      ctx.fillText(step.dist, c.x, c.y-18);
+    }
+  }
+}
+
+function hexToRgba(hex,a){
+  let r=parseInt(hex.slice(1,3),16),g=parseInt(hex.slice(3,5),16),b=parseInt(hex.slice(5,7),16);
+  return `rgba(${r},${g},${b},${a})`;
+}
+
+// ═══════════════════════════════════════════════════════════════════
+// PSEUDO CODE
+// ═══════════════════════════════════════════════════════════════════
+const PSEUDOS = {
+  brute: [
+    {t:'<span class="kw">function</span> <span class="fn">BruteForce</span>(cities, B):'},
+    {t:'  bestTour ← null; bestWeight ← ∞'},
+    {t:'  <span class="kw">for</span> each permutation π of cities:'},
+    {t:'    w ← tourWeight(π)    <span class="cm">// O(n) per perm</span>'},
+    {t:'    <span class="kw">if</span> w < bestWeight: bestTour ← π; bestWeight ← w'},
+    {t:'  <span class="kw">return</span> (bestWeight ≤ B, bestTour)  <span class="cm">// Decision answer</span>'},
+  ],
+  nn: [
+    {t:'<span class="kw">function</span> <span class="fn">NearestNeighbor</span>(cities, start=0):'},
+    {t:'  tour ← [start]; visited ← {start}'},
+    {t:'  <span class="kw">while</span> |tour| < n:'},
+    {t:'    next ← <span class="fn">argmin</span>{ dist(cur, v) : v ∉ visited }  <span class="cm">// greedy</span>'},
+    {t:'    tour.append(next); visited.add(next)'},
+    {t:'  <span class="kw">return</span> tour + [start]  <span class="cm">// close cycle</span>'},
+  ],
+  '2opt': [
+    {t:'<span class="kw">function</span> <span class="fn">TwoOpt</span>(tour):'},
+    {t:'  <span class="cm">// Start from NN tour</span>'},
+    {t:'  improved ← true'},
+    {t:'  <span class="kw">while</span> improved:  improved ← false'},
+    {t:'    <span class="kw">if</span> swap(i,j) reduces length: apply swap; improved ← true'},
+    {t:'  <span class="kw">return</span> tour  <span class="cm">// locally optimal</span>'},
+  ]
+};
+
+function renderPseudo(){
+  const lines = PSEUDOS[mode]||[];
+  document.getElementById('pseudoCode').innerHTML = lines.map((l,i)=>
+    `<div class="pseudo-line" id="pline${i}">${l.t}</div>`
+  ).join('');
+}
+function highlightPseudo(idx){
+  document.querySelectorAll('.pseudo-line').forEach((el,i)=>{
+    el.classList.toggle('highlight', i===idx);
+  });
+}
+
+// ═══════════════════════════════════════════════════════════════════
+// MODE SWITCH
+// ═══════════════════════════════════════════════════════════════════
+const modeDescs = {
+  brute: '<strong style="color:var(--accent2)">Brute Force</strong> — Tries every permutation. O((n-1)!) time. Guaranteed optimal. Exponential — infeasible for n &gt; 12.',
+  nn: '<strong style="color:var(--accent3)">Nearest Neighbor</strong> — Greedy heuristic. O(n²). Fast but may not find optimal tour. Approximation ratio: O(log n) worst case.',
+  '2opt': '<strong style="color:var(--accent)">NN + 2-Opt</strong> — Greedy construction then local search improvement. Iteratively swaps edge pairs to reduce tour length. O(n² · k).'
+};
+function setMode(m){
+  mode=m;
+  ['brute','nn','2opt'].forEach(x=>document.getElementById('mode'+{brute:'BF',nn:'NN','2opt':'2opt'}[x]).classList.toggle('active',x===m));
+  document.getElementById('modeDesc').innerHTML=modeDescs[m];
+  if(cities.length>0){resetAlgo();}
+  renderPseudo();
+}
+
+// ═══════════════════════════════════════════════════════════════════
+// SPEED
+// ═══════════════════════════════════════════════════════════════════
+const speedNames=['Very Slow','Slow','Medium','Fast','Very Fast'];
+function updateSpeed(){
+  speedIdx=parseInt(document.getElementById('speedSlider').value)-1;
+  document.getElementById('speedVal').textContent=speedNames[speedIdx];
+}
+
+// ═══════════════════════════════════════════════════════════════════
+// STATUS
+// ═══════════════════════════════════════════════════════════════════
+function setStatus(state, msg){
+  let dot=document.getElementById('statusDot');
+  dot.className='status-dot'+(state==='running'?' running':state==='done'?' done':state==='error'?' error':'');
+  document.getElementById('statusText').textContent=msg;
+}
+
+// ═══════════════════════════════════════════════════════════════════
+// CLEAR CITIES
+// ═══════════════════════════════════════════════════════════════════
+function clearCities(){
+  cities = [];
+  resetAlgo();
+  document.getElementById('statN').textContent='0';
+  setStatus('idle','Canvas cleared. Click to place cities or load a preset.');
+  drawCanvas();
+}
+
+// ═══════════════════════════════════════════════════════════════════
+// CANVAS CLICK — add cities
+// ═══════════════════════════════════════════════════════════════════
+canvas.addEventListener('click', e=>{
+  let rect=canvas.getBoundingClientRect();
+  let scaleX=canvas.width/rect.width, scaleY=canvas.height/rect.height;
+  let x=(e.clientX-rect.left)*scaleX, y=(e.clientY-rect.top)*scaleY;
+  cities.push({x,y});
+  document.getElementById('statN').textContent=cities.length;
+  resetAlgo();
+  afterCitiesSet();
+});
+
+// ═══════════════════════════════════════════════════════════════════
+// COLLAPSIBLE
+// ═══════════════════════════════════════════════════════════════════
+function toggleCollapse(id){
+  let el=document.getElementById(id);
+  let icon=document.getElementById('icon-'+id);
+  let collapsed=el.classList.toggle('collapsed');
+  if(icon) icon.style.transform=collapsed?'rotate(-90deg)':'rotate(0deg)';
+}
+
+// ═══════════════════════════════════════════════════════════════════
+// TABS
+// ═══════════════════════════════════════════════════════════════════
+function switchTab(name){
+  document.querySelectorAll('.tab').forEach((t,i)=>{
+    let tabs=['visualizer','comparison','proof','growth','overview'];
+    t.classList.toggle('active',tabs[i]===name);
+  });
+  document.querySelectorAll('.tab-panel').forEach(p=>p.classList.remove('active'));
+  document.getElementById('tab-'+name).classList.add('active');
+  if(name==='growth') drawGrowthChart();
+  if(name==='proof') resizeReductionCanvas();
+}
+
+// ═══════════════════════════════════════════════════════════════════
+// COMPARISON
+// ═══════════════════════════════════════════════════════════════════
+function runComparison(){
+  let preset=document.getElementById('cmpPreset').value;
+  let pts;
+  if(preset==='random6') pts=randomPts(6,380,300);
+  else if(preset==='random8') pts=randomPts(8,380,300);
+  else pts=scaleCities(PRESETS[preset]||PRESETS.square, 380, 300);
+
+  // Brute force — only safe for n<=8 (n=9 = 40k perms, would freeze)
+  let bfTour=null, bfWeight=Infinity, bfOps=0;
+  const n=pts.length;
+  const base2=Array.from({length:n-1},(_,i)=>i+1);
+  function dist2(a,b){return Math.sqrt((a.x-b.x)**2+(a.y-b.y)**2);}
+  function tw(t){let w=0;for(let i=0;i<t.length;i++)w+=dist2(pts[t[i]],pts[t[(i+1)%t.length]]);return w;}
+  if(n<=8){
+    (function perms(a,c){
+      if(!a.length){bfOps++;let t=[0,...c],w=tw(t);if(w<bfWeight){bfWeight=w;bfTour=[...t];}return;}
+      for(let i=0;i<a.length;i++){let r=[...a];r.splice(i,1);perms(r,[...c,a[i]]);}
+    })(base2,[]);
+  } else {
+    // n>8: run NN+2opt as proxy, label accordingly
+    let vis=new Array(n).fill(false),t=[0];vis[0]=true;
+    while(t.length<n){let cur=t[t.length-1],b2=-1,bd=Infinity;for(let j=0;j<n;j++){if(!vis[j]){bfOps++;let d=dist2(pts[cur],pts[j]);if(d<bd){bd=d;b2=j;}}}t.push(b2);vis[b2]=true;}
+    let imp=true;while(imp){imp=false;for(let i=0;i<n-1;i++)for(let j=i+2;j<n;j++){let a=t[i],b=t[i+1],c=t[j],d=t[(j+1)%n];let bf2=dist2(pts[a],pts[b])+dist2(pts[c],pts[d]),af=dist2(pts[a],pts[c])+dist2(pts[b],pts[d]);if(af<bf2-0.001){let s=t.slice(i+1,j+1).reverse();for(let k=0;k<s.length;k++)t[i+1+k]=s[k];imp=true;}}}
+    bfTour=t; bfWeight=tw(t);
+  }
+
+  // NN + 2opt
+  let visited=new Array(n).fill(false), nnTour=[0]; visited[0]=true;
+  let nnOps=0;
+  while(nnTour.length<n){
+    let cur=nnTour[nnTour.length-1],best=-1,bestD=Infinity;
+    for(let j=0;j<n;j++){if(!visited[j]){nnOps++;let d=dist2(pts[cur],pts[j]);if(d<bestD){bestD=d;best=j;}}}
+    nnTour.push(best);visited[best]=true;
+  }
+
+  // 2opt
+  let improved=true;
+  while(improved){
+    improved=false;
+    for(let i=0;i<n-1;i++){
+      for(let j=i+2;j<n;j++){
+        nnOps++;
+        let a=nnTour[i],b=nnTour[i+1],c=nnTour[j],d=nnTour[(j+1)%n];
+        let before=dist2(pts[a],pts[b])+dist2(pts[c],pts[d]);
+        let after=dist2(pts[a],pts[c])+dist2(pts[b],pts[d]);
+        if(after<before-0.001){
+          let sub=nnTour.slice(i+1,j+1).reverse();
+          for(let k=0;k<sub.length;k++)nnTour[i+1+k]=sub[k];
+          improved=true;
+        }
+      }
+    }
+  }
+  let nnWeight=tw(nnTour);
+
+  // Draw
+  drawCmpCanvas('cmpBFCanvas', pts, bfTour||nnTour, '#ff6b35');
+  drawCmpCanvas('cmpNNCanvas', pts, nnTour, '#7fff6e');
+
+  document.getElementById('cmpBFCost').textContent=bfWeight.toFixed(1);
+  document.getElementById('cmpBFOps').textContent=bfOps.toLocaleString();
+  document.getElementById('cmpBFPerms').textContent=n<=8?factorial(n-1).toLocaleString():'(n>8, skipped)';
+  document.getElementById('cmpNNCost').textContent=nnWeight.toFixed(1);
+  document.getElementById('cmpNNOps').textContent=nnOps.toLocaleString();
+  let ratio=bfWeight>0?(nnWeight/bfWeight):1;
+  document.getElementById('cmpRatio').textContent=ratio.toFixed(3)+'×';
+  document.getElementById('cmpRatio').style.color = ratio>1.2?'var(--accent2)':ratio>1.05?'var(--yellow)':'var(--accent3)';
+
+  let analysis='';
+  if(ratio<=1.001) analysis=`<strong style="color:var(--accent3)">NN+2opt found the OPTIMAL tour!</strong> Both algorithms agree on cost <strong>${bfWeight.toFixed(1)}</strong>. Greedy heuristic was sufficient here.`;
+  else analysis=`<strong>Brute Force</strong> found optimal tour: <strong style="color:var(--accent2)">${bfWeight.toFixed(1)}</strong>. <strong>NN+2opt</strong> found: <strong style="color:var(--accent3)">${nnWeight.toFixed(1)}</strong>. Approximation ratio = <strong>${ratio.toFixed(3)}×</strong>. The heuristic is ${((ratio-1)*100).toFixed(1)}% above optimal. Brute force used ${bfOps.toLocaleString()} operations vs ${nnOps.toLocaleString()} for heuristic.`;
+  document.getElementById('cmpAnalysis').innerHTML=analysis;
+}
+
+function randomPts(n,w,h,pad=40){
+  let pts=[];
+  for(let i=0;i<n;i++) pts.push({x:pad+Math.random()*(w-2*pad),y:pad+Math.random()*(h-2*pad)});
+  return pts;
+}
+
+function drawCmpCanvas(id, pts, tour, color){
+  let cv=document.getElementById(id);
+  let cx=cv.getContext('2d');
+  cx.clearRect(0,0,cv.width,cv.height);
+  // bg grid
+  cx.strokeStyle='rgba(255,255,255,0.03)';cx.lineWidth=1;
+  for(let x=0;x<cv.width;x+=40){cx.beginPath();cx.moveTo(x,0);cx.lineTo(x,cv.height);cx.stroke();}
+  for(let y=0;y<cv.height;y+=40){cx.beginPath();cx.moveTo(0,y);cx.lineTo(cv.width,y);cx.stroke();}
+  if(!pts||!tour) return;
+  // tour edges
+  cx.strokeStyle=color;cx.lineWidth=2;
+  for(let i=0;i<tour.length;i++){
+    let a=pts[tour[i]],b=pts[tour[(i+1)%tour.length]];
+    cx.beginPath();cx.moveTo(a.x,a.y);cx.lineTo(b.x,b.y);cx.stroke();
+  }
+  // cities
+  for(let i=0;i<pts.length;i++){
+    let p=pts[i];
+    cx.beginPath();cx.arc(p.x,p.y,8,0,2*Math.PI);
+    cx.fillStyle=color;cx.fill();
+    cx.strokeStyle='#07090f';cx.lineWidth=2;cx.stroke();
+    cx.fillStyle='#000';cx.font='bold 10px monospace';cx.textAlign='center';cx.textBaseline='middle';
+    cx.fillText(i,p.x,p.y);
+  }
+}
+
+function factorial(n){let r=1;for(let i=2;i<=n;i++)r*=i;return r;}
+
+// ═══════════════════════════════════════════════════════════════════
+// REDUCTION DIAGRAM
+// ═══════════════════════════════════════════════════════════════════
+function resizeReductionCanvas(){
+  let rc=document.getElementById('reductionCanvas');
+  rc.width=rc.offsetWidth||700;
+}
+
+function drawReduction(type){
+  resizeReductionCanvas();
+  let rc=document.getElementById('reductionCanvas');
+  let cx=rc.getContext('2d');
+  let W=rc.width, H=rc.height;
+  cx.clearRect(0,0,W,H);
+
+  // Two panels: left = Hamiltonian Cycle instance, right = TSP instance
+  let midX=W/2;
+  // panel labels
+  cx.fillStyle='rgba(255,255,255,0.03)';
+  cx.fillRect(0,0,midX-10,H); cx.fillRect(midX+10,0,W-midX-10,H);
+
+  cx.font='bold 13px Syne,sans-serif'; cx.textAlign='center';
+  cx.fillStyle='#8faabb';
+  cx.fillText('Hamiltonian Cycle Instance G', midX/2, 22);
+  cx.fillText('TSP-D Instance G\' (w, B=n)', midX+midX/2, 22);
+
+  // arrow in middle
+  cx.strokeStyle='rgba(192,132,252,0.8)';cx.lineWidth=2;
+  cx.beginPath();cx.moveTo(midX-8,H/2);cx.lineTo(midX+8,H/2);cx.stroke();
+  cx.fillStyle='rgba(192,132,252,0.8)';
+  cx.beginPath();cx.moveTo(midX+8,H/2);cx.lineTo(midX+2,H/2-5);cx.lineTo(midX+2,H/2+5);cx.closePath();cx.fill();
+  cx.font='10px Syne,sans-serif';cx.fillStyle='#c084fc';cx.fillText('f',midX,H/2-8);cx.fillText('poly',midX,H/2+16);
+
+  if(type==='has'){
+    // G: a triangle (has Ham cycle 0-1-2-0)
+    let gPts=[{x:midX/2,y:80},{x:midX/2-70,y:190},{x:midX/2+70,y:190}];
+    let gEdges=[[0,1],[1,2],[2,0]]; // all edges present => has ham cycle
+    drawGraphPanel(cx, gPts, gEdges, gPts.length, '#7fff6e', true, 'Has Hamiltonian Cycle', midX, H);
+
+    // G': complete weighted, weight=1 for all edges (all in G), B=3
+    let tPts=[{x:midX+midX/2,y:80},{x:midX+midX/2-70,y:190},{x:midX+midX/2+70,y:190}];
+    let tEdges=[[0,1,1],[1,2,1],[2,0,1]];
+    drawTSPPanel(cx, tPts, tEdges, 3, '#7fff6e', 'w=1 for all edges (in G). B=3. Tour: 0→1→2→0, cost=3 ≤ B=3 ✓', W, H);
+
+    document.getElementById('reductionExplain').innerHTML=
+      '<strong>YES instance:</strong> G is a triangle with all 3 edges — it has a Hamiltonian Cycle (0→1→2→0). <br>In G\', all edges get weight 1. Tour cost = 3 = n = B. <strong style="color:var(--accent3)">Decision answer: YES ✓</strong>';
+  } else {
+    // G: path graph, no Ham cycle (missing edge 0-2)
+    let gPts=[{x:midX/2-70,y:135},{x:midX/2,y:80},{x:midX/2+70,y:135},{x:midX/2,y:195}];
+    let gEdges=[[0,1],[1,2],[2,3]]; // path, missing 0-3 and 0-2 etc
+    drawGraphPanel(cx, gPts, gEdges, 4, '#ff4455', false, 'No Hamiltonian Cycle', midX, H);
+
+    let tPts=[{x:midX+midX/2-70,y:135},{x:midX+midX/2,y:80},{x:midX+midX/2+70,y:135},{x:midX+midX/2,y:195}];
+    let allEdges=[];
+    for(let i=0;i<4;i++)for(let j=i+1;j<4;j++){
+      let inG=gEdges.some(e=>(e[0]===i&&e[1]===j)||(e[0]===j&&e[1]===i));
+      allEdges.push([i,j,inG?1:2]);
+    }
+    drawTSPPanel(cx, tPts, allEdges, 4, '#ff4455', 'Edges in G → weight 1; absent → weight 2. Any tour must use ≥1 edge w=2 ⟹ cost ≥ 5 > B=4. NO ✗', W, H);
+
+    document.getElementById('reductionExplain').innerHTML=
+      '<strong>NO instance:</strong> G has 4 vertices but only a path — no Hamiltonian Cycle. <br>In G\', any tour must cross a weight-2 edge. Minimum tour cost ≥ 5 > B=4. <strong style="color:var(--red)">Decision answer: NO ✗</strong>';
+  }
+}
+
+function drawGraphPanel(cx, pts, edges, n, color, hasHam, label, maxX, H){
+  // faint absent edges
+  for(let i=0;i<n;i++)for(let j=i+1;j<n;j++){
+    if(!edges.some(e=>(e[0]===i&&e[1]===j)||(e[0]===j&&e[1]===i))){
+      cx.strokeStyle='rgba(255,255,255,0.08)';cx.lineWidth=1;cx.setLineDash([4,4]);
+      cx.beginPath();cx.moveTo(pts[i].x,pts[i].y);cx.lineTo(pts[j].x,pts[j].y);cx.stroke();
+      cx.setLineDash([]);
+    }
+  }
+  for(let e of edges){
+    cx.strokeStyle=color;cx.lineWidth=2;cx.setLineDash([]);
+    cx.beginPath();cx.moveTo(pts[e[0]].x,pts[e[0]].y);cx.lineTo(pts[e[1]].x,pts[e[1]].y);cx.stroke();
+  }
+  for(let i=0;i<pts.length;i++){
+    cx.beginPath();cx.arc(pts[i].x,pts[i].y,9,0,2*Math.PI);
+    cx.fillStyle=color;cx.fill();
+    cx.strokeStyle='#07090f';cx.lineWidth=2;cx.stroke();
+    cx.fillStyle='#000';cx.font='bold 10px monospace';cx.textAlign='center';cx.textBaseline='middle';
+    cx.fillText(i,pts[i].x,pts[i].y);
+  }
+  cx.font='11px Syne,sans-serif';cx.fillStyle=color;cx.textAlign='center';
+  cx.fillText(label, maxX/2, H-14);
+}
+
+function drawTSPPanel(cx, pts, edges, n, color, label, W, H){
+  let midX=W/2;
+  for(let e of edges){
+    let w=e[2]; let a=pts[e[0]],b=pts[e[1]];
+    cx.strokeStyle=w===1?color:'rgba(255,68,85,0.5)';
+    cx.lineWidth=w===1?2:1;cx.setLineDash(w===1?[]:[4,4]);
+    cx.beginPath();cx.moveTo(a.x,a.y);cx.lineTo(b.x,b.y);cx.stroke();
+    cx.setLineDash([]);
+    let mx=(a.x+b.x)/2,my=(a.y+b.y)/2;
+    cx.font='10px monospace';cx.fillStyle=w===1?color:'#ff4455';cx.textAlign='center';
+    cx.fillText('w='+w,mx,my-5);
+  }
+  for(let i=0;i<pts.length;i++){
+    cx.beginPath();cx.arc(pts[i].x,pts[i].y,9,0,2*Math.PI);
+    cx.fillStyle=color;cx.fill();
+    cx.strokeStyle='#07090f';cx.lineWidth=2;cx.stroke();
+    cx.fillStyle='#000';cx.font='bold 10px monospace';cx.textAlign='center';cx.textBaseline='middle';
+    cx.fillText(i,pts[i].x,pts[i].y);
+  }
+  cx.font='10px Syne,sans-serif';cx.fillStyle='#8faabb';cx.textAlign='center';
+  cx.fillText(label, midX+W/4, H-14);
+}
+
+// ═══════════════════════════════════════════════════════════════════
+// GROWTH CHART
+// ═══════════════════════════════════════════════════════════════════
+function drawGrowthChart(){
+  let gc=document.getElementById('growthCanvas');
+  gc.width=gc.offsetWidth||800;
+  let cx=gc.getContext('2d');
+  let W=gc.width, H=gc.height;
+  cx.clearRect(0,0,W,H);
+
+  let pad={l:60,r:30,t:30,b:50};
+  let chartW=W-pad.l-pad.r, chartH=H-pad.t-pad.b;
+
+  const ns=[3,4,5,6,7,8,9,10,11,12,13];
+  function fact(n){let r=1;for(let i=2;i<=n;i++)r*=i;return r;}
+  const bf=ns.map(n=>fact(n-1)/2);
+  const nn=ns.map(n=>n*n);
+  const opt2=ns.map(n=>n*n*3);
+
+  // log scale
+  const maxVal=Math.max(...bf);
+  function toLog(v){return v<=0?0:Math.log10(v+1);}
+  const maxLog=toLog(maxVal)+0.5;
+
+  // grid
+  cx.strokeStyle='rgba(255,255,255,0.04)';cx.lineWidth=1;
+  for(let i=0;i<=10;i++){
+    let y=pad.t+chartH*(1-i/10);
+    cx.beginPath();cx.moveTo(pad.l,y);cx.lineTo(pad.l+chartW,y);cx.stroke();
+    cx.fillStyle='rgba(255,255,255,0.25)';cx.font='10px monospace';cx.textAlign='right';cx.textBaseline='middle';
+    cx.fillText('10^'+Math.round(maxLog*i/10),pad.l-6,y);
+  }
+  ns.forEach((n,i)=>{
+    let x=pad.l+chartW*i/(ns.length-1);
+    cx.beginPath();cx.moveTo(x,pad.t);cx.lineTo(x,pad.t+chartH);cx.stroke();
+    cx.fillStyle='rgba(255,255,255,0.25)';cx.font='10px monospace';cx.textAlign='center';
+    cx.fillText('n='+n,x,pad.t+chartH+16);
+  });
+
+  // axes
+  cx.strokeStyle='rgba(255,255,255,0.15)';cx.lineWidth=1.5;
+  cx.beginPath();cx.moveTo(pad.l,pad.t);cx.lineTo(pad.l,pad.t+chartH);cx.lineTo(pad.l+chartW,pad.t+chartH);cx.stroke();
+
+  // plot lines
+  function plotLine(data, color, label, dash=[]){
+    cx.strokeStyle=color;cx.lineWidth=2.5;cx.setLineDash(dash);
+    cx.beginPath();
+    data.forEach((v,i)=>{
+      let x=pad.l+chartW*i/(ns.length-1);
+      let y=pad.t+chartH*(1-toLog(v)/maxLog);
+      if(i===0)cx.moveTo(x,y);else cx.lineTo(x,y);
+    });
+    cx.stroke();cx.setLineDash([]);
+    // dot
+    cx.fillStyle=color;
+    data.forEach((v,i)=>{
+      let x=pad.l+chartW*i/(ns.length-1);
+      let y=pad.t+chartH*(1-toLog(v)/maxLog);
+      cx.beginPath();cx.arc(x,y,3,0,2*Math.PI);cx.fill();
+    });
+  }
+
+  plotLine(bf,'#ff6b35','O(n!)');
+  plotLine(nn,'#7fff6e','O(n²)');
+  plotLine(opt2,'#00d4ff','O(n²·k)');
+
+  // legend
+  [[`#ff6b35`,'Brute Force O((n-1)!/2)'],[`#7fff6e`,'Nearest Neighbor O(n²)'],[`#00d4ff`,'NN+2opt O(n²·k)']].forEach(([c,l],i)=>{
+    let lx=pad.l+10+i*220, ly=pad.t+14;
+    cx.fillStyle=c;cx.fillRect(lx,ly-5,24,3);
+    cx.fillStyle='rgba(255,255,255,0.6)';cx.font='11px monospace';cx.textAlign='left';
+    cx.fillText(l,lx+30,ly);
+  });
+
+  // title
+  cx.fillStyle='rgba(255,255,255,0.5)';cx.font='11px Syne,sans-serif';cx.textAlign='center';
+  cx.fillText('Operations (log₁₀ scale) vs Number of Cities',W/2,pad.t-10);
+}
+
+// ═══════════════════════════════════════════════════════════════════
+// INIT
+// ═══════════════════════════════════════════════════════════════════
+setMode('brute');
+loadPreset('square');
+drawCanvas();
+renderPseudo();
+
+// Handle resize
+window.addEventListener('resize', ()=>{
+  if(document.getElementById('tab-growth').classList.contains('active')) drawGrowthChart();
+  if(document.getElementById('tab-proof').classList.contains('active')) resizeReductionCanvas();
+});
+</script>
+</body>
+</html>
